@@ -1,13 +1,14 @@
-package pgDB
+package pgdb
 
 import (
 	"restApi/myErrors"
 
 	"database/sql"
 	"fmt"
+
+	//
 	_ "github.com/lib/pq"
 )
-
 
 func OpenDB(connStr string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", connStr)
@@ -23,16 +24,16 @@ func OpenDB(connStr string) (*sql.DB, error) {
 	return db, nil
 }
 
-type Todo struct{
-	ID int				`json:"id"`
-	Description	string	`json:"description"`
+type Todo struct {
+	ID          int    `json:"id"`
+	Description string `json:"description"`
 }
 
 type TodoModel struct {
 	DB *sql.DB
 }
 
-func (t *TodoModel) Insert(description string) (error) {
+func (t *TodoModel) Insert(description string) error {
 	statement := `INSERT INTO todo (todo_description) VALUES ($1);`
 
 	_, err := t.DB.Exec(statement, description)
@@ -45,10 +46,10 @@ func (t *TodoModel) Insert(description string) (error) {
 }
 
 func (t *TodoModel) Delete(id int) (int, error) {
-	statement := `DELETE FROM todo WHERE todo_id = $1`
+	statement := `DELETE FROM todo WHERE todo_id = $1;`
 
 	result, err := t.DB.Exec(statement, id)
-	if err != nil{
+	if err != nil {
 		myErrors.Check(err)
 		return -1, err
 	}
@@ -75,7 +76,7 @@ func (t *TodoModel) GetTodos() ([]Todo, error) {
 
 	defer rows.Close()
 
-	for rows.Next(){
+	for rows.Next() {
 		err = rows.Scan(&id, &description)
 		todoItem = Todo{id, description}
 

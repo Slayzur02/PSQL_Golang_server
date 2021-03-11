@@ -1,38 +1,42 @@
 package main
 
 import (
-	"net/http"
 	"encoding/json"
-    "github.com/gorilla/mux"
 	"fmt"
-	"strconv"
-	"restApi/myErrors"
-	"restApi/pgDB"
-	"github.com/joho/godotenv"
+	"net/http"
 	"os"
+	"restApi/myErrors"
+	pgdb "restApi/pgDB"
+	"strconv"
+
+	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
+var todoController *pgdb.TodoModel
 
-
-
-var todoController *pgDB.TodoModel
-
+// HomePage - handler for /
 type HomePage struct{}
+
 func (h *HomePage) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "this is cool")
 }
 
+// GetAllTodos - handler for /todos
 type GetAllTodos struct{}
-func (g *GetAllTodos) ServeHTTP(w http.ResponseWriter, r *http.Request){
+
+func (g *GetAllTodos) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	todoList, err := todoController.GetTodos()
 	if err != nil {
 		myErrors.Check(err)
-	} else{
+	} else {
 		json.NewEncoder(w).Encode(todoList)
 	}
 }
 
+// AddSingleTodo - handler for /todo/id
 type AddSingleTodo struct{}
+
 func (a *AddSingleTodo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	desc := vars["string"]
@@ -45,17 +49,19 @@ func (a *AddSingleTodo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/getall", http.StatusSeeOther)
 }
 
+// DeleteSingleTodo ndler for /delete
 type DeleteSingleTodo struct{}
+
 func (d *DeleteSingleTodo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	stringId := vars["id"]
+	stringID := vars["id"]
 
-	intId, err := strconv.Atoi(stringId)
-	if (err != nil) {
+	intID, err := strconv.Atoi(stringID)
+	if err != nil {
 		myErrors.Check(err)
 	}
 
-	_, err = todoController.Delete(intId)
+	_, err = todoController.Delete(intID)
 	if err != nil {
 		myErrors.Check(err)
 	}
@@ -71,7 +77,6 @@ func main() {
 	username := os.Getenv("PSQL_USERNAME")
 	password := os.Getenv("PSQL_PASSWORD")
 
-
 	websiteRouter := mux.NewRouter().StrictSlash(true)
 	websiteRouter.Handle("/", new(HomePage))
 	websiteRouter.Handle("/getall", new(GetAllTodos))
@@ -79,13 +84,13 @@ func main() {
 	websiteRouter.Handle("/delete/{id}", new(DeleteSingleTodo))
 
 	connectionString := "user=" + username + " password='" + password + "' dbname=todo sslmode=disable"
-	db, err := pgDB.OpenDB(connectionString)
+	db, err := pgdb.OpenDB(connectionString)
 
-	if err!= nil {
+	if err != nil {
 		myErrors.Check(err)
 	}
 
-	todoController = &pgDB.TodoModel{db}
+	todoController = &pgdb.TodoModel{DB: db}
 
 	http.ListenAndServe(":8080", websiteRouter)
 
